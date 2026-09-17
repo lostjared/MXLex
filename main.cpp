@@ -7,7 +7,7 @@
 
 int main() {
     try {
-        std::istringstream stream("a++ && b-- || c == d && e != f && x <= y && x >= y && a << 2 && b >> 1");
+        std::istringstream stream("+ ++ += - -- -= -> ->* * *= / /= % %= & && &= | || |= ^ ^= ~ ! != = == < <= <=> << <<= > >= >> >>= : :: . .* .. ... .... ..... ? , ; ( ) [ ] { } &&& ||| +++ --- ===");
         mx::Scanner scanner(stream);
         mx::Token token;
         mx::TOKEN_TYPE token_type;

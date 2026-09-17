@@ -107,15 +107,13 @@ namespace mx {
             return {token, layout};
 
         CHAR_TYPE c_type = layout;
-
-        char nxt = static_cast<char>(next_ch);
+        int nxt = next_ch;
         switch (c) {
         case '+':
             if (nxt == '+') {
                 c_type = CHAR_TYPE::CHAR_PLUSPLUS;
                 token += static_cast<char>(input.get());
-            }
-            if (nxt == '=') {
+            } else if (nxt == '=') {
                 c_type = CHAR_TYPE::CHAR_PLUSEQ;
                 token += static_cast<char>(input.get());
             }
@@ -124,20 +122,25 @@ namespace mx {
             if (nxt == '-') {
                 c_type = CHAR_TYPE::CHAR_MINUSMINUS;
                 token += static_cast<char>(input.get());
-            }
-            if (nxt == '=') {
+            } else if (nxt == '=') {
                 c_type = CHAR_TYPE::CHAR_MINUSEQ;
                 token += static_cast<char>(input.get());
+            } else if (nxt == '>') {
+                c_type = CHAR_TYPE::CHAR_ARROW;
+                token += static_cast<char>(input.get());
+                nxt = input.peek();
+                if(nxt == '*')  {
+                    c_type = CHAR_TYPE::CHAR_ARROWASTERISK;
+                    token += static_cast<char>(input.get());
+                }
             }
             break;
         case '&':
             if (nxt == '&') {
                 c_type = CHAR_TYPE::CHAR_ANDAND;
                 token += static_cast<char>(input.get());
-            }
-            if (nxt == '=') {
+            } else if (nxt == '=') {
                 c_type = CHAR_TYPE::CHAR_ANDEQ;
-                ;
                 token += static_cast<char>(input.get());
             }
             break;
@@ -145,8 +148,7 @@ namespace mx {
             if (nxt == '|') {
                 c_type = CHAR_TYPE::CHAR_OROR;
                 token += static_cast<char>(input.get());
-            }
-            if (nxt == '=') {
+            } else if (nxt == '=') {
                 c_type = CHAR_TYPE::CHAR_OREQ;
                 token += static_cast<char>(input.get());
             }
@@ -165,28 +167,86 @@ namespace mx {
             break;
         case '<':
             if (nxt == '=') {
+                token += static_cast<char>(input.get());
+                nxt = input.peek();
                 c_type = CHAR_TYPE::CHAR_LESSTHANEQ;
+                if (nxt == '>') {
+                    token += static_cast<char>(input.get());
+                    c_type = CHAR_TYPE::CHAR_SPACESHIP;
+                }
+            } else if (nxt == '<') {
+                c_type = CHAR_TYPE::CHAR_SHIFTLEFT;
                 token += static_cast<char>(input.get());
-            }
-            if (nxt == '<') {
-                c_type = CHAR_TYPE::CHAR_STREAMOUT;
-                ;
-                token += static_cast<char>(input.get());
+                nxt = input.peek();
+                if (nxt == '=') {
+                    c_type = CHAR_TYPE::CHAR_SHIFTLEFTEQ;
+                    token += static_cast<char>(input.get());
+                }
             }
             break;
         case '>':
             if (nxt == '=') {
                 c_type = CHAR_TYPE::CHAR_GREATEREQ;
                 token += static_cast<char>(input.get());
-            }
-            if (nxt == '>') {
-                c_type = CHAR_TYPE::CHAR_STREAMIN;
-                ;
+            } else if (nxt == '>') {
+                c_type = CHAR_TYPE::CHAR_SHIFTRIGHT;
                 token += static_cast<char>(input.get());
+                nxt = input.peek();
+                if (nxt == '=') {
+                    c_type = CHAR_TYPE::CHAR_SHIFTRIGHTEQ;
+                    token += static_cast<char>(input.get());
+                }
+            }
+            break;
+        case '*':
+            if (nxt == '=') {
+                c_type = CHAR_TYPE::CHAR_MULEQ;
+                token += static_cast<char>(input.get());
+            }
+            break;
+
+        case '/':
+            if (nxt == '=') {
+                c_type = CHAR_TYPE::CHAR_DIVEQ;
+                token += static_cast<char>(input.get());
+            }
+            break;
+        case '%':
+            if (nxt == '=') {
+                c_type = CHAR_TYPE::CHAR_MODEQ;
+                token += static_cast<char>(input.get());
+            }
+            break;
+        case ':':
+            if (nxt == ':') {
+                c_type = CHAR_TYPE::CHAR_COLONCOLON;
+                token += static_cast<char>(input.get());
+            }
+            break;
+        case '^':
+            if (nxt == '=') {
+                c_type = CHAR_TYPE::CHAR_XOREQ;
+                token += static_cast<char>(input.get());
+            }
+            break;
+
+        case '.':
+            if (nxt == '*') {
+                c_type = CHAR_TYPE::CHAR_PERIODASTERISK;
+                token += static_cast<char>(input.get());
+            } else if (nxt == '.') {
+                char ch = static_cast<char>(input.get());
+                int next = input.peek();
+                if (next == '.') {
+                    token += ch;
+                    token += static_cast<char>(input.get());
+                    c_type = CHAR_TYPE::CHAR_DOTDOTDOT;
+                } else {
+                    input.putback(ch);
+                }
             }
             break;
         }
         return {token, c_type};
     }
-
 } // namespace mx

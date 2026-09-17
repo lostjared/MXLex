@@ -36,7 +36,7 @@ namespace mx {
             out << "String: ";
             break;
         case TOKEN_TYPE::OPERATOR:
-            out << "Operator: ";
+            out << "Operator:  ";
             break;
         case TOKEN_TYPE::TOKEN_NULL:
             out << "NULL TOKEN EOF\n";
