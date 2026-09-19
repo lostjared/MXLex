@@ -22,6 +22,6 @@ namespace mx {
         [[nodiscard]] std::pair<std::string, TOKEN_TYPE> get_digits();
         [[nodiscard]] std::pair<std::string, CHAR_TYPE> get_symbols();
 	size_t token_count = 0;
-	size_t line = 0;
+	size_t line = 1;
     };
 } // namespace mx

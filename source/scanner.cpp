@@ -12,6 +12,8 @@ namespace mx {
         do {
             if (!input.get(c))
                 return TOKEN_TYPE::TOKEN_NULL;
+	    if(c == '\n')
+		    ++line;
 
         } while (CharLayout::get_type(c) == CHAR_TYPE::CHAR_WHITESPACE);
 
@@ -23,6 +25,7 @@ namespace mx {
             input.putback(c);
             std::string value = get_identifier();
             token.set_token(value, TOKEN_TYPE::IDENTIFIER);
+	    token.set_line(line);
 	    ++token_count;
             return TOKEN_TYPE::IDENTIFIER;
         }
@@ -30,6 +33,7 @@ namespace mx {
             input.putback(c);
             auto digits = get_digits();
             token.set_token(digits.first, digits.second);
+	    token.set_line(line);
 	    ++token_count;
             return digits.second;
         }
@@ -38,6 +42,7 @@ namespace mx {
                 input.putback(c);
                 auto symbol = get_symbols();
                 token.set_token(symbol.first, TOKEN_TYPE::OPERATOR, symbol.second);
+		token.set_line(line);
 		++token_count;
                 return TOKEN_TYPE::OPERATOR;
             }

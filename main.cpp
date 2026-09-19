@@ -16,7 +16,7 @@ int main() {
                 std::cerr << token << "\n";
                 break;
             }
-            std::cout << token << "\n";
+            std::cout << token << " at line: " << token.get_line() << "\n";
         }
     } catch (const mx::ScannerError &e) {
         std::cerr << "Token Error Exception: " << e.what() << "\n";
