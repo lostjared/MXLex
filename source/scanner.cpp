@@ -6,7 +6,6 @@
 namespace mx {
 
     Scanner::Scanner(std::istream &in) : input(in) {}
-
     [[nodiscard]] TOKEN_TYPE Scanner::lex(Token &token) {
         token.clear();
         char c;
@@ -24,12 +23,14 @@ namespace mx {
             input.putback(c);
             std::string value = get_identifier();
             token.set_token(value, TOKEN_TYPE::IDENTIFIER);
+	    ++token_count;
             return TOKEN_TYPE::IDENTIFIER;
         }
         case CHAR_TYPE::DIGIT: {
             input.putback(c);
             auto digits = get_digits();
             token.set_token(digits.first, digits.second);
+	    ++token_count;
             return digits.second;
         }
         default:
@@ -37,6 +38,7 @@ namespace mx {
                 input.putback(c);
                 auto symbol = get_symbols();
                 token.set_token(symbol.first, TOKEN_TYPE::OPERATOR, symbol.second);
+		++token_count;
                 return TOKEN_TYPE::OPERATOR;
             }
             token.set_token(std::string(1, c), TOKEN_TYPE::TOKEN_ERROR);

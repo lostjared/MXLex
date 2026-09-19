@@ -7,7 +7,7 @@
 
 int main() {
     try {
-        std::istringstream stream("+ ++ += - -- -= -> ->* * *= / /= % %= & && &= | || |= ^ ^= ~ ! != = == < <= <=> << <<= > >= >> >>= : :: . .* .. ... .... ..... ? , ; ( ) [ ] { } &&& ||| +++ --- ===");
+        std::istringstream stream("int main()\n{\nchar c;\nstd::cin >> c;\nstd::cout << c;\n}");
         mx::Scanner scanner(stream);
         mx::Token token;
         mx::TOKEN_TYPE token_type;
@@ -23,5 +23,4 @@ int main() {
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
-    ;
 }

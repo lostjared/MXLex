@@ -21,6 +21,14 @@ namespace mx {
         c_type = CHAR_TYPE::CHAR_NULL;
     }
 
+    void Token::set_line(const size_t &line_num) {
+	    line = line_num;
+    }
+
+    size_t Token::get_line() const {
+	    return line;
+    }
+
     std::ostream &operator<<(std::ostream &out, const Token &token) {
         switch (token.get_type()) {
         case TOKEN_TYPE::IDENTIFIER:
