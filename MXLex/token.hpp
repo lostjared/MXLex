@@ -25,13 +25,14 @@ namespace mx {
         [[nodiscard]] CHAR_TYPE get_char_type() const;
         void clear();
         friend std::ostream &operator<<(std::ostream &out, const Token &token);
-	void set_line(const size_t &value);
-	size_t get_line() const;
+        void set_line(const size_t &value);
+        size_t get_line() const;
+
       private:
         std::string token_value{};
         TOKEN_TYPE token_type{TOKEN_TYPE::TOKEN_NULL};
         CHAR_TYPE c_type{CHAR_TYPE::CHAR_NULL};
-	size_t line = 0;
+        size_t line = 0;
     };
 
     class CharLayout {

@@ -12,8 +12,8 @@ namespace mx {
         do {
             if (!input.get(c))
                 return TOKEN_TYPE::TOKEN_NULL;
-	    if(c == '\n')
-		    ++line;
+            if (c == '\n')
+                ++line;
 
         } while (CharLayout::get_type(c) == CHAR_TYPE::CHAR_WHITESPACE);
 
@@ -25,16 +25,16 @@ namespace mx {
             input.putback(c);
             std::string value = get_identifier();
             token.set_token(value, TOKEN_TYPE::IDENTIFIER);
-	    token.set_line(line);
-	    ++token_count;
+            token.set_line(line);
+            ++token_count;
             return TOKEN_TYPE::IDENTIFIER;
         }
         case CHAR_TYPE::DIGIT: {
             input.putback(c);
             auto digits = get_digits();
             token.set_token(digits.first, digits.second);
-	    token.set_line(line);
-	    ++token_count;
+            token.set_line(line);
+            ++token_count;
             return digits.second;
         }
         default:
@@ -42,8 +42,8 @@ namespace mx {
                 input.putback(c);
                 auto symbol = get_symbols();
                 token.set_token(symbol.first, TOKEN_TYPE::OPERATOR, symbol.second);
-		token.set_line(line);
-		++token_count;
+                token.set_line(line);
+                ++token_count;
                 return TOKEN_TYPE::OPERATOR;
             }
             token.set_token(std::string(1, c), TOKEN_TYPE::TOKEN_ERROR);
@@ -136,7 +136,7 @@ namespace mx {
                 c_type = CHAR_TYPE::CHAR_ARROW;
                 token += static_cast<char>(input.get());
                 nxt = input.peek();
-                if(nxt == '*')  {
+                if (nxt == '*') {
                     c_type = CHAR_TYPE::CHAR_ARROWASTERISK;
                     token += static_cast<char>(input.get());
                 }
