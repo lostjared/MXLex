@@ -48,6 +48,8 @@ namespace mx {
         case TOKEN_TYPE::TOKEN_ERROR:
             out << "Error Token - Value: ";
             break;
+        default:
+            break;
         }
         out << token.get_token();
         if (token.get_type() == TOKEN_TYPE::OPERATOR)

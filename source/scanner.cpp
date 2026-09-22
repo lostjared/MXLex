@@ -8,17 +8,32 @@ namespace mx {
     Scanner::Scanner(std::istream &in) : input(in) {}
     [[nodiscard]] TOKEN_TYPE Scanner::lex(Token &token) {
         token.clear();
-        char c;
-        do {
-            if (!input.get(c))
+        char c = 0;
+        CHAR_TYPE layout = CHAR_TYPE::CHAR_NULL;
+
+        while (1) {
+            if (!input.get(c)) {
                 return TOKEN_TYPE::TOKEN_NULL;
-            if (c == '\n')
-                ++line;
-
-        } while (CharLayout::get_type(c) == CHAR_TYPE::CHAR_WHITESPACE);
-
-        CHAR_TYPE layout = CharLayout::get_type(c);
-
+            }
+            layout = CharLayout::get_type(c);
+            if (layout == CHAR_TYPE::CHAR_WHITESPACE) {
+                if (c == '\n')
+                    ++line;
+                continue;
+            }
+            if (layout == CHAR_TYPE::CHAR_SLASH && input.peek() == '/') {
+                while (input.get(c)) {
+                    if (c == '\n') {
+                        ++line;
+                        break;
+                    }
+                }
+                if (!input && c != '\n')
+                    return TOKEN_TYPE::TOKEN_NULL;
+                continue;
+            }
+            break;
+        }
         switch (layout) {
         case CHAR_TYPE::CHARACTER:
         case CHAR_TYPE::CHAR_UNDERSCORE: {
@@ -38,6 +53,7 @@ namespace mx {
             return digits.second;
         }
         default:
+
             if (layout >= CHAR_TYPE::CHAR_LPAREN && layout < CHAR_TYPE::CHAR_WHITESPACE) {
                 input.putback(c);
                 auto symbol = get_symbols();
@@ -47,6 +63,7 @@ namespace mx {
                 return TOKEN_TYPE::OPERATOR;
             }
             token.set_token(std::string(1, c), TOKEN_TYPE::TOKEN_ERROR);
+            token.set_line(line);
             return TOKEN_TYPE::TOKEN_ERROR;
         }
         return TOKEN_TYPE::TOKEN_ERROR;
@@ -67,12 +84,8 @@ namespace mx {
         return token;
     }
 
-    size_t Scanner::get_token_count() const {
-        return token_count;
-    }
-    size_t Scanner::get_line() const {
-        return line;
-    }
+    size_t Scanner::get_token_count() const { return token_count; }
+    size_t Scanner::get_line() const { return line; }
 
     [[nodiscard]] std::pair<std::string, TOKEN_TYPE> Scanner::get_digits() {
         std::string token;
@@ -263,4 +276,6 @@ namespace mx {
         }
         return {token, c_type};
     }
+
+    void Scanner::skip_comment() {}
 } // namespace mx

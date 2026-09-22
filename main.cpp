@@ -7,7 +7,7 @@
 
 int main() {
     try {
-        std::istringstream stream("int main()\n{\nchar c;\nstd::cin >> c;\nstd::cout << c;\n}");
+        std::istringstream stream("int main()\n{\nchar c;\nstd::cin >> c;\nstd::cout << c;\n// test comment\ntest 3}");
         mx::Scanner scanner(stream);
         mx::Token token;
         mx::TOKEN_TYPE token_type;
