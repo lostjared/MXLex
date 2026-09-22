@@ -16,7 +16,6 @@ namespace mx {
         [[nodiscard]] TOKEN_TYPE lex(Token &token);
         size_t get_token_count() const;
         size_t get_line() const;
-
       private:
         std::istream &input;
         [[nodiscard]] std::string get_identifier();

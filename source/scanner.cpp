@@ -67,6 +67,13 @@ namespace mx {
         return token;
     }
 
+    size_t Scanner::get_token_count() const {
+        return token_count;
+    }
+    size_t Scanner::get_line() const {
+        return line;
+    }
+
     [[nodiscard]] std::pair<std::string, TOKEN_TYPE> Scanner::get_digits() {
         std::string token;
         char c;
