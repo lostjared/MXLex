@@ -37,16 +37,14 @@ namespace mx {
         switch (layout) {
         case CHAR_TYPE::CHARACTER:
         case CHAR_TYPE::CHAR_UNDERSCORE: {
-            input.putback(c);
-            std::string value = get_identifier();
+            std::string value = get_identifier(c);
             token.set_token(value, TOKEN_TYPE::IDENTIFIER);
             token.set_line(line);
             ++token_count;
             return TOKEN_TYPE::IDENTIFIER;
         }
         case CHAR_TYPE::DIGIT: {
-            input.putback(c);
-            auto digits = get_digits();
+            auto digits = get_digits(c);
             token.set_token(digits.first, digits.second);
             token.set_line(line);
             ++token_count;
@@ -55,8 +53,7 @@ namespace mx {
         default:
 
             if (layout >= CHAR_TYPE::CHAR_LPAREN && layout < CHAR_TYPE::CHAR_WHITESPACE) {
-                input.putback(c);
-                auto symbol = get_symbols();
+                auto symbol = get_symbols(c);
                 token.set_token(symbol.first, TOKEN_TYPE::OPERATOR, symbol.second);
                 token.set_line(line);
                 ++token_count;
@@ -69,8 +66,9 @@ namespace mx {
         return TOKEN_TYPE::TOKEN_ERROR;
     }
 
-    [[nodiscard]] std::string Scanner::get_identifier() {
+    [[nodiscard]] std::string Scanner::get_identifier(char initial_ch) {
         std::string token;
+        token += initial_ch;
         char c;
         while (input.get(c)) {
             CHAR_TYPE ch_type = CharLayout::get_type(c);
@@ -87,13 +85,13 @@ namespace mx {
     size_t Scanner::get_token_count() const { return token_count; }
     size_t Scanner::get_line() const { return line; }
 
-    [[nodiscard]] std::pair<std::string, TOKEN_TYPE> Scanner::get_digits() {
+    [[nodiscard]] std::pair<std::string, TOKEN_TYPE> Scanner::get_digits(char initial_ch) {
         std::string token;
+        token += initial_ch;
         char c;
         TOKEN_TYPE t_type = TOKEN_TYPE::INTEGER_VALUE;
         bool float_val = false;
         bool error_val = false;
-
         while (input.get(c)) {
             CHAR_TYPE ch_type = CharLayout::get_type(c);
             if (ch_type != CHAR_TYPE::DIGIT && ch_type != CHAR_TYPE::CHAR_PERIOD) {
@@ -121,12 +119,9 @@ namespace mx {
         return {token, t_type};
     }
 
-    [[nodiscard]] std::pair<std::string, CHAR_TYPE> Scanner::get_symbols() {
-        char c;
+    [[nodiscard]] std::pair<std::string, CHAR_TYPE> Scanner::get_symbols(char initial_ch) {
+        char c = initial_ch;;
         std::string token;
-        if (!input.get(c))
-            return {token, CHAR_TYPE::CHAR_NULL};
-
         token += c;
         CHAR_TYPE layout = CharLayout::get_type(c);
         int next_ch = input.peek();

@@ -17,12 +17,11 @@ namespace mx {
         size_t get_token_count() const;
         size_t get_line() const;
         void skip_comment();
-
       private:
         std::istream &input;
-        [[nodiscard]] std::string get_identifier();
-        [[nodiscard]] std::pair<std::string, TOKEN_TYPE> get_digits();
-        [[nodiscard]] std::pair<std::string, CHAR_TYPE> get_symbols();
+        [[nodiscard]] std::string get_identifier(char c);
+        [[nodiscard]] std::pair<std::string, TOKEN_TYPE> get_digits(char c);
+        [[nodiscard]] std::pair<std::string, CHAR_TYPE> get_symbols(char c);
         size_t token_count = 0;
         size_t line = 1;
     };
