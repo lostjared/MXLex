@@ -7,7 +7,7 @@
 
 int main() {
     try {
-        std::istringstream stream("int main()\n{ char c;\nstd::cin >> c;\nstd::cout << c;\n// test comment\n /*test 3} test  1 2 3 */ test");
+        std::istringstream stream("0 1 42 123 000123 0.0 1.0 123.456 123. .5 .0001 1e0 1E0 1e1 1E10 1e+10 1e-10 1.5e10 1.5E10 1.5e+10 1.5e-10 .5e2 .5E+2 .5e-2 5.e2 5.E+2 5.e-2 1e000 1e+000 1e-000 0e0 0.0e0 123e456 1e2+3 1e2-3 1e2*3 1e2/3 .5e.5");
         mx::Scanner scanner(stream);
         mx::Token token;
         mx::TOKEN_TYPE token_type;

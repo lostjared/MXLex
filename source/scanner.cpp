@@ -76,6 +76,13 @@ namespace mx {
             return digits.second;
         }
         default:
+            if(layout == CHAR_TYPE::CHAR_PERIOD && CharLayout::get_type(input.peek()) == CHAR_TYPE::DIGIT) {
+                auto digits = get_digits(c);
+                token.set_token(digits.first, digits.second);
+                token.set_line(line);
+                ++token_count;
+                return digits.second;
+            }
 
             if (layout >= CHAR_TYPE::CHAR_LPAREN && layout < CHAR_TYPE::CHAR_WHITESPACE) {
                 auto symbol = get_symbols(c);
@@ -114,21 +121,48 @@ namespace mx {
         std::string token;
         token += initial_ch;
         char c;
-        TOKEN_TYPE t_type = TOKEN_TYPE::INTEGER_VALUE;
-        bool float_val = false;
+        CHAR_TYPE  i_ch = CharLayout::get_type(initial_ch);
+        TOKEN_TYPE t_type = initial_ch == '.' ? TOKEN_TYPE::FLOAT_VALUE : TOKEN_TYPE::INTEGER_VALUE;
+        bool float_period_found = initial_ch == '.';
         bool error_val = false;
+
+        if(i_ch != CHAR_TYPE::CHAR_PERIOD && i_ch != CHAR_TYPE::DIGIT) {
+            throw ScannerError(std::format(" Invalid number: {}", line));
+        }
+        bool exponent_found = false;
+        bool digit_found = false;
         while (input.get(c)) {
             CHAR_TYPE ch_type = CharLayout::get_type(c);
-            if (ch_type != CHAR_TYPE::DIGIT && ch_type != CHAR_TYPE::CHAR_PERIOD) {
+            if (ch_type != CHAR_TYPE::DIGIT && ch_type != CHAR_TYPE::CHAR_PERIOD && c != 'e' && c != 'E') {
                 input.putback(c);
                 break;
             }
+            if(c == 'e' || c == 'E') {
+                if(exponent_found) {
+                    token += c;
+                    throw ScannerError(std::format("Error: Float value {} incorrect exponent", token));
+                }
+                token += c;
+                t_type = TOKEN_TYPE::FLOAT_VALUE;
+                exponent_found = true;
+                int peek_ch = input.peek();
+                if(peek_ch == '+' || peek_ch == '-') {
+                    token += static_cast<char>(peek_ch);
+                    input.get(c);
+                    t_type = TOKEN_TYPE::FLOAT_VALUE;
+                    continue;
+                }
+                continue;
+            }
+
             if (ch_type == CHAR_TYPE::DIGIT) {
                 token += c;
+                if(exponent_found)
+                    digit_found = true;
             } else if (ch_type == CHAR_TYPE::CHAR_PERIOD) {
-                if (!float_val) {
+                if (!float_period_found && !exponent_found) {
                     token += c;
-                    float_val = true;
+                    float_period_found = true;
                     t_type = TOKEN_TYPE::FLOAT_VALUE;
                 } else {
                     error_val = true;
@@ -137,8 +171,13 @@ namespace mx {
             }
         }
 
+
+        if(exponent_found && !digit_found) {
+            throw ScannerError(std::format("Error invalid float value: {}", token));
+        }
+
         if (error_val) {
-            throw ScannerError(std::format("Error: Float value: {} has too many periods", token));
+            throw ScannerError(std::format("Error: Float value: {} incorrect period placement", token));
         }
 
         return {token, t_type};
