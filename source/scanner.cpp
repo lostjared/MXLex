@@ -32,6 +32,31 @@ namespace mx {
                     return TOKEN_TYPE::TOKEN_NULL;
                 continue;
             }
+
+
+            if(layout == CHAR_TYPE::CHAR_SLASH && input.peek() == '*') {
+                bool closed = false;
+                size_t line_start = line;
+                input.get(c);
+
+                while(input.get(c)) {
+                    if(c == '\n') {
+                        ++line;
+                        continue;
+                    }
+
+                    if(c == '*' && input.peek() == '/') {
+                        input.get(c);
+                        closed = true;
+                        break;
+                    }
+                }
+                if(!closed)
+                    throw ScannerError(std::format("Error comment close */ not found on Line: {}", line_start));
+
+                continue;
+            }
+
             break;
         }
         switch (layout) {
