@@ -171,7 +171,6 @@ namespace mx {
             }
         }
 
-
         if(exponent_found && !digit_found) {
             throw ScannerError(std::format("Error invalid float value: {}", token));
         }
