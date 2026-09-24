@@ -334,6 +334,4 @@ namespace mx {
         }
         return {token, c_type};
     }
-
-    void Scanner::skip_comment() {}
 } // namespace mx

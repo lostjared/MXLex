@@ -7,12 +7,10 @@
 #include <sstream>
 
 int main(int argc, char **argv) {
-
     if (argc != 2) {
         std::cerr << "Requires on argument filename\n" << argv[0] << " input.\n";
         return EXIT_FAILURE;
     }
-
     try {
         std::fstream file;
         file.open(argv[1], std::ios::in);
@@ -20,7 +18,6 @@ int main(int argc, char **argv) {
             std::cerr << "Error opening file: " << argv[1] << "\n";
             return EXIT_FAILURE;
         }
-
         mx::Scanner scanner(file);
         mx::Token token;
         mx::TOKEN_TYPE token_type;
