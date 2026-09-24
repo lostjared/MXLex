@@ -33,25 +33,24 @@ namespace mx {
                 continue;
             }
 
-
-            if(layout == CHAR_TYPE::CHAR_SLASH && input.peek() == '*') {
+            if (layout == CHAR_TYPE::CHAR_SLASH && input.peek() == '*') {
                 bool closed = false;
                 size_t line_start = line;
                 input.get(c);
 
-                while(input.get(c)) {
-                    if(c == '\n') {
+                while (input.get(c)) {
+                    if (c == '\n') {
                         ++line;
                         continue;
                     }
 
-                    if(c == '*' && input.peek() == '/') {
+                    if (c == '*' && input.peek() == '/') {
                         input.get(c);
                         closed = true;
                         break;
                     }
                 }
-                if(!closed)
+                if (!closed)
                     throw ScannerError(std::format("Error comment close */ not found on Line: {}", line_start));
 
                 continue;
@@ -76,7 +75,7 @@ namespace mx {
             return digits.second;
         }
         default:
-            if(layout == CHAR_TYPE::CHAR_PERIOD && CharLayout::get_type(input.peek()) == CHAR_TYPE::DIGIT) {
+            if (layout == CHAR_TYPE::CHAR_PERIOD && CharLayout::get_type(input.peek()) == CHAR_TYPE::DIGIT) {
                 auto digits = get_digits(c);
                 token.set_token(digits.first, digits.second);
                 token.set_line(line);
@@ -121,12 +120,12 @@ namespace mx {
         std::string token;
         token += initial_ch;
         char c;
-        CHAR_TYPE  i_ch = CharLayout::get_type(initial_ch);
+        CHAR_TYPE i_ch = CharLayout::get_type(initial_ch);
         TOKEN_TYPE t_type = initial_ch == '.' ? TOKEN_TYPE::FLOAT_VALUE : TOKEN_TYPE::INTEGER_VALUE;
         bool float_period_found = initial_ch == '.';
         bool error_val = false;
 
-        if(i_ch != CHAR_TYPE::CHAR_PERIOD && i_ch != CHAR_TYPE::DIGIT) {
+        if (i_ch != CHAR_TYPE::CHAR_PERIOD && i_ch != CHAR_TYPE::DIGIT) {
             throw ScannerError(std::format(" Invalid number: {}", line));
         }
         bool exponent_found = false;
@@ -137,8 +136,8 @@ namespace mx {
                 input.putback(c);
                 break;
             }
-            if(c == 'e' || c == 'E') {
-                if(exponent_found) {
+            if (c == 'e' || c == 'E') {
+                if (exponent_found) {
                     token += c;
                     throw ScannerError(std::format("Error: Float value {} incorrect exponent", token));
                 }
@@ -146,7 +145,7 @@ namespace mx {
                 t_type = TOKEN_TYPE::FLOAT_VALUE;
                 exponent_found = true;
                 int peek_ch = input.peek();
-                if(peek_ch == '+' || peek_ch == '-') {
+                if (peek_ch == '+' || peek_ch == '-') {
                     token += static_cast<char>(peek_ch);
                     input.get(c);
                     t_type = TOKEN_TYPE::FLOAT_VALUE;
@@ -157,7 +156,7 @@ namespace mx {
 
             if (ch_type == CHAR_TYPE::DIGIT) {
                 token += c;
-                if(exponent_found)
+                if (exponent_found)
                     digit_found = true;
             } else if (ch_type == CHAR_TYPE::CHAR_PERIOD) {
                 if (!float_period_found && !exponent_found) {
@@ -165,13 +164,13 @@ namespace mx {
                     float_period_found = true;
                     t_type = TOKEN_TYPE::FLOAT_VALUE;
                 } else {
-                    error_val = true;
-                    token += c;
+                    input.putback(c);
+                    break;
                 }
             }
         }
 
-        if(exponent_found && !digit_found) {
+        if (exponent_found && !digit_found) {
             throw ScannerError(std::format("Error invalid float value: {}", token));
         }
 
@@ -183,7 +182,8 @@ namespace mx {
     }
 
     [[nodiscard]] std::pair<std::string, CHAR_TYPE> Scanner::get_symbols(char initial_ch) {
-        char c = initial_ch;;
+        char c = initial_ch;
+        ;
         std::string token;
         token += c;
         CHAR_TYPE layout = CharLayout::get_type(c);
