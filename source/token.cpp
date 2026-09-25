@@ -19,9 +19,8 @@ namespace mx {
         token_value.clear();
         token_type = TOKEN_TYPE::TOKEN_NULL;
         c_type = CHAR_TYPE::CHAR_NULL;
+	line = 0;
     }
-
-
 
     std::ostream &operator<<(std::ostream &out, const Token &token) {
         switch (token.get_type()) {
