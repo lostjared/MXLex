@@ -20,13 +20,14 @@ namespace mx {
         Token &operator=(Token &&token) = default;
         void set_token(std::string_view token, TOKEN_TYPE value_token_type);
         void set_token(std::string_view token, TOKEN_TYPE value_token_type, CHAR_TYPE c_type);
+
         [[nodiscard]] TOKEN_TYPE get_type() const;
         [[nodiscard]] const std::string &get_token() const;
         [[nodiscard]] CHAR_TYPE get_char_type() const;
         void clear();
         friend std::ostream &operator<<(std::ostream &out, const Token &token);
-        void set_line(const size_t &value);
-        size_t get_line() const;
+        void set_line(const size_t &line_num) { line = line_num; }
+        size_t get_line() const { return line; }
 
       private:
         std::string token_value{};

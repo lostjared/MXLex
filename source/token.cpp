@@ -21,9 +21,7 @@ namespace mx {
         c_type = CHAR_TYPE::CHAR_NULL;
     }
 
-    void Token::set_line(const size_t &line_num) { line = line_num; }
 
-    size_t Token::get_line() const { return line; }
 
     std::ostream &operator<<(std::ostream &out, const Token &token) {
         switch (token.get_type()) {
@@ -51,7 +49,7 @@ namespace mx {
         default:
             break;
         }
-        out << token.get_token();
+        out << token.get_token() << " Line: " << token.get_line();
         if (token.get_type() == TOKEN_TYPE::OPERATOR)
             out << " Char Code: " << static_cast<int>(token.get_char_type());
         return out;
