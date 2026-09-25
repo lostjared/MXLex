@@ -134,5 +134,3 @@ namespace mx {
     inline constexpr std::array<CHAR_TYPE, CharLayout::SIZE> CharLayout::characters = CharLayout::fill_chars();
 
 } // namespace mx
-
-// namespace mx
