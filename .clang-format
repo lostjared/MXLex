@@ -14,4 +14,3 @@ AlignAfterOpenBracket: Align
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 BreakAfterReturnType: None
-SpaceAfterTemplateKeyword: false
