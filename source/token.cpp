@@ -5,6 +5,7 @@ namespace mx {
     void Token::set_token(std::string_view token, TOKEN_TYPE value_token_type) {
         token_value = std::string(token);
         token_type = value_token_type;
+        c_type = CHAR_TYPE::CHAR_NULL;
     }
     void Token::set_token(std::string_view token, TOKEN_TYPE value_token_type, CHAR_TYPE ctype) {
         token_value = std::string(token);
@@ -32,6 +33,9 @@ namespace mx {
             break;
         case TOKEN_TYPE::FLOAT_VALUE:
             out << "Float: ";
+            break;
+        case TOKEN_TYPE::CHARACTER_VALUE:
+            out << "Character: ";
             break;
         case TOKEN_TYPE::STRING_VALUE:
             out << "String: ";

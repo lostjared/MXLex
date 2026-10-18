@@ -36,6 +36,13 @@ target_compile_options(test-lex PRIVATE
 
 target_link_libraries(test-lex PRIVATE mxlex)
 
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(scanner-tests tests/scanner.cpp)
+    target_link_libraries(scanner-tests PRIVATE mxlex)
+    add_test(NAME scanner-regressions COMMAND scanner-tests)
+endif()
+
 install(TARGETS mxlex
     EXPORT MXLexTargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

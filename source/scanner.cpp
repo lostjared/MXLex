@@ -1,337 +1,187 @@
 #include "MXLex/scanner.hpp"
-#include <format>
-#include <iostream>
+#include <regex>
 #include <string>
 
 namespace mx {
+    namespace {
+        constexpr int END = std::char_traits<char>::eof();
+
+        bool digit(int c) { return c >= '0' && c <= '9'; }
+        bool letter(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
+    } // namespace
 
     Scanner::Scanner(std::istream &in) : input(in) {}
-    [[nodiscard]] TOKEN_TYPE Scanner::lex(Token &token) {
-        token.clear();
-        char c = 0;
-        CHAR_TYPE layout = CHAR_TYPE::CHAR_NULL;
 
-        while (1) {
-            if (!input.get(c)) {
-                return TOKEN_TYPE::TOKEN_NULL;
-            }
-            layout = CharLayout::get_type(c);
-            if (layout == CHAR_TYPE::CHAR_WHITESPACE) {
-                if (c == '\n')
-                    ++line;
+    int Scanner::peek(size_t offset) {
+        while (lookahead.size() <= offset) {
+            int c = input.get();
+            if (c == END)
+                return END;
+            if (c == '\\' && (input.peek() == '\n' || input.peek() == '\r')) {
+                int newline = input.get();
+                if (newline == '\r' && input.peek() == '\n')
+                    input.get();
+                ++input_line;
                 continue;
             }
-            if (layout == CHAR_TYPE::CHAR_SLASH && input.peek() == '/') {
-                while (input.get(c)) {
-                    if (c == '\n') {
-                        ++line;
-                        break;
-                    }
-                }
-                if (!input && c != '\n')
-                    return TOKEN_TYPE::TOKEN_NULL;
-                continue;
+            if (c == '\r') {
+                if (input.peek() == '\n')
+                    input.get();
+                c = '\n';
             }
-
-            if (layout == CHAR_TYPE::CHAR_SLASH && input.peek() == '*') {
-                bool closed = false;
-                size_t line_start = line;
-                input.get(c);
-
-                while (input.get(c)) {
-                    if (c == '\n') {
-                        ++line;
-                        continue;
-                    }
-
-                    if (c == '*' && input.peek() == '/') {
-                        input.get(c);
-                        closed = true;
-                        break;
-                    }
-                }
-                if (!closed)
-                    throw ScannerError(std::format("Error comment close */ not found on Line: {}", line_start));
-
-                continue;
-            }
-
-            break;
+            lookahead.emplace_back(static_cast<char>(c), input_line);
+            if (c == '\n')
+                ++input_line;
         }
-        switch (layout) {
-        case CHAR_TYPE::CHARACTER:
-        case CHAR_TYPE::CHAR_UNDERSCORE: {
-            std::string value = get_identifier(c);
-            token.set_token(value, TOKEN_TYPE::IDENTIFIER);
-            token.set_line(line);
-            ++token_count;
-            return TOKEN_TYPE::IDENTIFIER;
-        }
-        case CHAR_TYPE::DIGIT: {
-            auto digits = get_digits(c);
-            token.set_token(digits.first, digits.second);
-            token.set_line(line);
-            ++token_count;
-            return digits.second;
-        }
-        default:
-            if (layout == CHAR_TYPE::CHAR_PERIOD && CharLayout::get_type(input.peek()) == CHAR_TYPE::DIGIT) {
-                auto digits = get_digits(c);
-                token.set_token(digits.first, digits.second);
-                token.set_line(line);
-                ++token_count;
-                return digits.second;
-            }
-
-            if (layout >= CHAR_TYPE::CHAR_LPAREN && layout < CHAR_TYPE::CHAR_WHITESPACE) {
-                auto symbol = get_symbols(c);
-                token.set_token(symbol.first, TOKEN_TYPE::OPERATOR, symbol.second);
-                token.set_line(line);
-                ++token_count;
-                return TOKEN_TYPE::OPERATOR;
-            }
-            token.set_token(std::string(1, c), TOKEN_TYPE::TOKEN_ERROR);
-            token.set_line(line);
-            return TOKEN_TYPE::TOKEN_ERROR;
-        }
-        return TOKEN_TYPE::TOKEN_ERROR;
+        return static_cast<unsigned char>(lookahead[offset].first);
     }
 
-    [[nodiscard]] std::string Scanner::get_identifier(char initial_ch) {
-        std::string token;
-        token += initial_ch;
-        char c;
-        while (input.get(c)) {
-            CHAR_TYPE ch_type = CharLayout::get_type(c);
-            if (ch_type == CHAR_TYPE::CHARACTER || ch_type == CHAR_TYPE::CHAR_UNDERSCORE || ch_type == CHAR_TYPE::DIGIT) {
-                token += c;
+    int Scanner::take() {
+        int c = peek();
+        if (c != END) {
+            line = lookahead.front().second + (c == '\n' ? 1 : 0);
+            lookahead.pop_front();
+        }
+        return c;
+    }
+
+    [[nodiscard]] TOKEN_TYPE Scanner::lex(Token &token) {
+        token.clear();
+        for (;;) {
+            int c = peek();
+            if (c == END) {
+                line = input_line;
+                return TOKEN_TYPE::TOKEN_NULL;
+            }
+            if (CharLayout::get_type(static_cast<char>(c)) == CHAR_TYPE::CHAR_WHITESPACE) {
+                take();
+                continue;
+            }
+            if (c == '/' && peek(1) == '/') {
+                while (peek() != END && take() != '\n') {
+                }
+                continue;
+            }
+            if (c == '/' && peek(1) == '*') {
+                size_t start = lookahead.front().second;
+                take();
+                take();
+                while (peek() != END && !(peek() == '*' && peek(1) == '/'))
+                    take();
+                if (peek() == END)
+                    throw ScannerError("Unterminated comment on line " + std::to_string(start));
+                take();
+                take();
+                continue;
+            }
+            break;
+        }
+
+        size_t start = lookahead.front().second;
+        char c = static_cast<char>(take());
+        if (letter(static_cast<unsigned char>(c))) {
+            std::string value = get_identifier(c);
+            if ((value == "L" || value == "u" || value == "U" || value == "u8") && (peek() == '"' || peek() == '\'')) {
+                char quote = static_cast<char>(take());
+                token.set_token(get_literal(value, quote), quote == '"' ? TOKEN_TYPE::STRING_VALUE : TOKEN_TYPE::CHARACTER_VALUE);
             } else {
-                input.putback(c);
-                break;
+                token.set_token(value, TOKEN_TYPE::IDENTIFIER);
+            }
+        } else if (digit(c) || (c == '.' && digit(peek()))) {
+            auto value = get_digits(c);
+            token.set_token(value.first, value.second);
+        } else if (c == '"' || c == '\'') {
+            token.set_token(get_literal("", c), c == '"' ? TOKEN_TYPE::STRING_VALUE : TOKEN_TYPE::CHARACTER_VALUE);
+        } else {
+            auto layout = CharLayout::get_type(c);
+            if (layout >= CHAR_TYPE::CHAR_LPAREN && layout <= CHAR_TYPE::CHAR_AT) {
+                auto symbol = get_symbols(c);
+                token.set_token(symbol.first, TOKEN_TYPE::OPERATOR, symbol.second);
+            } else {
+                token.set_token(std::string(1, c), TOKEN_TYPE::TOKEN_ERROR);
             }
         }
-        return token;
+        token.set_line(start);
+        ++token_count;
+        return token.get_type();
+    }
+
+    [[nodiscard]] std::string Scanner::get_identifier(char c) {
+        std::string value(1, c);
+        while (letter(peek()) || digit(peek()))
+            value += static_cast<char>(take());
+        return value;
+    }
+
+    std::string Scanner::get_literal(std::string prefix, char quote) {
+        size_t start = line;
+        std::string value = std::move(prefix);
+        value += quote;
+        bool has_content = false;
+        for (;;) {
+            int c = take();
+            if (c == END || c == '\n' || c == '\r')
+                throw ScannerError("Unterminated literal on line " + std::to_string(start));
+            value += static_cast<char>(c);
+            if (c == quote) {
+                if (quote == '\'' && !has_content)
+                    throw ScannerError("Empty character literal on line " + std::to_string(start));
+                return value;
+            }
+            if (c == '\\') {
+                c = take();
+                if (c == END || c == '\n' || c == '\r')
+                    throw ScannerError("Unterminated escape on line " + std::to_string(start));
+                value += static_cast<char>(c);
+            }
+            has_content = true;
+        }
     }
 
     size_t Scanner::get_token_count() const { return token_count; }
     size_t Scanner::get_line() const { return line; }
 
-    [[nodiscard]] std::pair<std::string, TOKEN_TYPE> Scanner::get_digits(char initial_ch) {
-        std::string token;
-        token += initial_ch;
-        char c;
-        CHAR_TYPE i_ch = CharLayout::get_type(initial_ch);
-        TOKEN_TYPE t_type = initial_ch == '.' ? TOKEN_TYPE::FLOAT_VALUE : TOKEN_TYPE::INTEGER_VALUE;
-        bool float_period_found = initial_ch == '.';
-        bool error_val = false;
-
-        if (i_ch != CHAR_TYPE::CHAR_PERIOD && i_ch != CHAR_TYPE::DIGIT) {
-            throw ScannerError(std::format(" Invalid number: {}", line));
+    [[nodiscard]] std::pair<std::string, TOKEN_TYPE> Scanner::get_digits(char c) {
+        std::string value(1, c);
+        while (letter(peek()) || digit(peek()) || peek() == '.' || ((peek() == '+' || peek() == '-') && (value.back() == 'e' || value.back() == 'E' || value.back() == 'p' || value.back() == 'P'))) {
+            value += static_cast<char>(take());
         }
-        bool exponent_found = false;
-        bool digit_found = false;
-        while (input.get(c)) {
-            CHAR_TYPE ch_type = CharLayout::get_type(c);
-            if (ch_type != CHAR_TYPE::DIGIT && ch_type != CHAR_TYPE::CHAR_PERIOD && c != 'e' && c != 'E') {
-                input.putback(c);
-                break;
-            }
-            if (c == 'e' || c == 'E') {
-                if (exponent_found) {
-                    token += c;
-                    throw ScannerError(std::format("Error: Float value {} incorrect exponent", token));
-                }
-                token += c;
-                t_type = TOKEN_TYPE::FLOAT_VALUE;
-                exponent_found = true;
-                int peek_ch = input.peek();
-                if (peek_ch == '+' || peek_ch == '-') {
-                    token += static_cast<char>(peek_ch);
-                    input.get(c);
-                    t_type = TOKEN_TYPE::FLOAT_VALUE;
-                    continue;
-                }
-                continue;
-            }
 
-            if (ch_type == CHAR_TYPE::DIGIT) {
-                token += c;
-                if (exponent_found)
-                    digit_found = true;
-            } else if (ch_type == CHAR_TYPE::CHAR_PERIOD) {
-                if (!float_period_found && !exponent_found) {
-                    token += c;
-                    float_period_found = true;
-                    t_type = TOKEN_TYPE::FLOAT_VALUE;
-                } else {
-                    input.putback(c);
+        static const std::regex integer(R"((0[xX][0-9a-fA-F]+|0[bB][01]+|0[0-7]*|[1-9][0-9]*)([uU](ll|LL|[lL])?|(ll|LL|[lL])[uU]?)?)");
+        static const std::regex floating(R"(((([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+)|0[xX]([0-9a-fA-F]+(\.[0-9a-fA-F]*)?|\.[0-9a-fA-F]+)[pP][+-]?[0-9]+)[fFlL]?)");
+        if (std::regex_match(value, integer))
+            return {value, TOKEN_TYPE::INTEGER_VALUE};
+        if (std::regex_match(value, floating))
+            return {value, TOKEN_TYPE::FLOAT_VALUE};
+        throw ScannerError("Invalid numeric literal '" + value + "' on line " + std::to_string(line));
+    }
+
+    [[nodiscard]] std::pair<std::string, CHAR_TYPE> Scanner::get_symbols(char c) {
+        using C = CHAR_TYPE;
+        struct Symbol {
+            std::string_view text;
+            C type;
+        };
+        // Longest matches first, including the C alternative punctuator spellings.
+        static constexpr Symbol symbols[] = {
+            {"%:%:", C::CHAR_HASHHASH}, {">>=", C::CHAR_SHIFTRIGHTEQ}, {"<<=", C::CHAR_SHIFTLEFTEQ}, {"...", C::CHAR_DOTDOTDOT}, {"->*", C::CHAR_ARROWASTERISK}, {"<=>", C::CHAR_SPACESHIP}, {"++", C::CHAR_PLUSPLUS}, {"+=", C::CHAR_PLUSEQ}, {"--", C::CHAR_MINUSMINUS}, {"-=", C::CHAR_MINUSEQ}, {"->", C::CHAR_ARROW}, {"&&", C::CHAR_ANDAND}, {"&=", C::CHAR_ANDEQ}, {"||", C::CHAR_OROR}, {"|=", C::CHAR_OREQ}, {"==", C::CHAR_EQEQ}, {"!=", C::CHAR_NOT_EQ}, {"<=", C::CHAR_LESSTHANEQ}, {"<<", C::CHAR_SHIFTLEFT}, {">=", C::CHAR_GREATEREQ}, {">>", C::CHAR_SHIFTRIGHT}, {"*=", C::CHAR_MULEQ}, {"/=", C::CHAR_DIVEQ}, {"%=", C::CHAR_MODEQ}, {"^=", C::CHAR_XOREQ}, {"::", C::CHAR_COLONCOLON}, {".*", C::CHAR_PERIODASTERISK}, {"##", C::CHAR_HASHHASH}, {"<:", C::CHAR_LBRACKET}, {":>", C::CHAR_RBRACKET}, {"<%", C::CHAR_LBRACE}, {"%>", C::CHAR_RBRACE}, {"%:", C::CHAR_HASH},
+        };
+        for (const auto &symbol : symbols) {
+            if (symbol.text.front() != c)
+                continue;
+            bool matches = true;
+            for (size_t i = 1; i < symbol.text.size(); ++i) {
+                if (peek(i - 1) != symbol.text[i]) {
+                    matches = false;
                     break;
                 }
             }
+            if (matches) {
+                for (size_t i = 1; i < symbol.text.size(); ++i)
+                    take();
+                return {std::string(symbol.text), symbol.type};
+            }
         }
-
-        if (exponent_found && !digit_found) {
-            throw ScannerError(std::format("Error invalid float value: {}", token));
-        }
-
-        if (error_val) {
-            throw ScannerError(std::format("Error: Float value: {} incorrect period placement", token));
-        }
-
-        return {token, t_type};
-    }
-
-    [[nodiscard]] std::pair<std::string, CHAR_TYPE> Scanner::get_symbols(char initial_ch) {
-        char c = initial_ch;
-        ;
-        std::string token;
-        token += c;
-        CHAR_TYPE layout = CharLayout::get_type(c);
-        int next_ch = input.peek();
-        if (next_ch == std::char_traits<char>::eof())
-            return {token, layout};
-
-        CHAR_TYPE c_type = layout;
-        int nxt = next_ch;
-        switch (c) {
-        case '+':
-            if (nxt == '+') {
-                c_type = CHAR_TYPE::CHAR_PLUSPLUS;
-                token += static_cast<char>(input.get());
-            } else if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_PLUSEQ;
-                token += static_cast<char>(input.get());
-            }
-            break;
-        case '-':
-            if (nxt == '-') {
-                c_type = CHAR_TYPE::CHAR_MINUSMINUS;
-                token += static_cast<char>(input.get());
-            } else if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_MINUSEQ;
-                token += static_cast<char>(input.get());
-            } else if (nxt == '>') {
-                c_type = CHAR_TYPE::CHAR_ARROW;
-                token += static_cast<char>(input.get());
-                nxt = input.peek();
-                if (nxt == '*') {
-                    c_type = CHAR_TYPE::CHAR_ARROWASTERISK;
-                    token += static_cast<char>(input.get());
-                }
-            }
-            break;
-        case '&':
-            if (nxt == '&') {
-                c_type = CHAR_TYPE::CHAR_ANDAND;
-                token += static_cast<char>(input.get());
-            } else if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_ANDEQ;
-                token += static_cast<char>(input.get());
-            }
-            break;
-        case '|':
-            if (nxt == '|') {
-                c_type = CHAR_TYPE::CHAR_OROR;
-                token += static_cast<char>(input.get());
-            } else if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_OREQ;
-                token += static_cast<char>(input.get());
-            }
-            break;
-        case '=':
-            if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_EQEQ;
-                token += static_cast<char>(input.get());
-            }
-            break;
-        case '!':
-            if (nxt == '=') {
-                token += static_cast<char>(input.get());
-                c_type = CHAR_TYPE::CHAR_NOT_EQ;
-            }
-            break;
-        case '<':
-            if (nxt == '=') {
-                token += static_cast<char>(input.get());
-                nxt = input.peek();
-                c_type = CHAR_TYPE::CHAR_LESSTHANEQ;
-                if (nxt == '>') {
-                    token += static_cast<char>(input.get());
-                    c_type = CHAR_TYPE::CHAR_SPACESHIP;
-                }
-            } else if (nxt == '<') {
-                c_type = CHAR_TYPE::CHAR_SHIFTLEFT;
-                token += static_cast<char>(input.get());
-                nxt = input.peek();
-                if (nxt == '=') {
-                    c_type = CHAR_TYPE::CHAR_SHIFTLEFTEQ;
-                    token += static_cast<char>(input.get());
-                }
-            }
-            break;
-        case '>':
-            if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_GREATEREQ;
-                token += static_cast<char>(input.get());
-            } else if (nxt == '>') {
-                c_type = CHAR_TYPE::CHAR_SHIFTRIGHT;
-                token += static_cast<char>(input.get());
-                nxt = input.peek();
-                if (nxt == '=') {
-                    c_type = CHAR_TYPE::CHAR_SHIFTRIGHTEQ;
-                    token += static_cast<char>(input.get());
-                }
-            }
-            break;
-        case '*':
-            if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_MULEQ;
-                token += static_cast<char>(input.get());
-            }
-            break;
-
-        case '/':
-            if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_DIVEQ;
-                token += static_cast<char>(input.get());
-            }
-            break;
-        case '%':
-            if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_MODEQ;
-                token += static_cast<char>(input.get());
-            }
-            break;
-        case ':':
-            if (nxt == ':') {
-                c_type = CHAR_TYPE::CHAR_COLONCOLON;
-                token += static_cast<char>(input.get());
-            }
-            break;
-        case '^':
-            if (nxt == '=') {
-                c_type = CHAR_TYPE::CHAR_XOREQ;
-                token += static_cast<char>(input.get());
-            }
-            break;
-
-        case '.':
-            if (nxt == '*') {
-                c_type = CHAR_TYPE::CHAR_PERIODASTERISK;
-                token += static_cast<char>(input.get());
-            } else if (nxt == '.') {
-                char ch = static_cast<char>(input.get());
-                int next = input.peek();
-                if (next == '.') {
-                    token += ch;
-                    token += static_cast<char>(input.get());
-                    c_type = CHAR_TYPE::CHAR_DOTDOTDOT;
-                } else {
-                    input.putback(ch);
-                }
-            }
-            break;
-        }
-        return {token, c_type};
+        return {std::string(1, c), CharLayout::get_type(c)};
     }
 } // namespace mx

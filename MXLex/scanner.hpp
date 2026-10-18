@@ -1,6 +1,8 @@
 #pragma once
 #include <MXLex/token.hpp>
+#include <deque>
 #include <iostream>
+#include <stdexcept>
 #include <utility>
 
 namespace mx {
@@ -19,6 +21,11 @@ namespace mx {
 
       private:
         std::istream &input;
+        std::deque<std::pair<char, size_t>> lookahead;
+        size_t input_line = 1;
+        int peek(size_t offset = 0);
+        int take();
+        std::string get_literal(std::string prefix, char quote);
         [[nodiscard]] std::string get_identifier(char c);
         [[nodiscard]] std::pair<std::string, TOKEN_TYPE> get_digits(char c);
         [[nodiscard]] std::pair<std::string, CHAR_TYPE> get_symbols(char c);

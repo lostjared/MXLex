@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        std::cerr << "Requires on argument filename\n" << argv[0] << " input.\n";
+        std::cerr << "Requires one argument: filename\n" << argv[0] << " input.\n";
         return EXIT_FAILURE;
     }
     try {
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
         while ((token_type = scanner.lex(token)) != mx::TOKEN_TYPE::TOKEN_NULL) {
             if (token_type == mx::TOKEN_TYPE::TOKEN_ERROR) {
                 std::cerr << token << "\n";
-                break;
+                return EXIT_FAILURE;
             }
             std::cout << "[" << token.get_line() << "] -> " << token << "\n";
         }
