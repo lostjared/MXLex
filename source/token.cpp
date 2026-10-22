@@ -21,6 +21,7 @@ namespace mx {
         token_type = TOKEN_TYPE::TOKEN_NULL;
         c_type = CHAR_TYPE::CHAR_NULL;
         line = 0;
+        column = 0;
     }
 
     std::ostream &operator<<(std::ostream &out, const Token &token) {
@@ -52,7 +53,7 @@ namespace mx {
         default:
             break;
         }
-        out << token.get_token() << " Line: " << token.get_line();
+        out << token.get_token() << " Line: " << token.get_line() << " Column: " << token.get_column();
         if (token.get_type() == TOKEN_TYPE::OPERATOR)
             out << " Char Code: " << static_cast<int>(token.get_char_type());
         return out;

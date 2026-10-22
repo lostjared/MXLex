@@ -21,8 +21,14 @@ namespace mx {
 
       private:
         std::istream &input;
-        std::deque<std::pair<char, size_t>> lookahead;
+        struct SourceCharacter {
+            char value;
+            size_t line;
+            size_t column;
+        };
+        std::deque<SourceCharacter> lookahead;
         size_t input_line = 1;
+        size_t input_column = 1;
         int peek(size_t offset = 0);
         int take();
         std::string get_literal(std::string prefix, char quote);

@@ -21,6 +21,7 @@ namespace {
         while (scanner.lex(token) != T::TOKEN_NULL)
             tokens.push_back(token);
         require(token.get_type() == T::TOKEN_NULL && token.get_char_type() == C::CHAR_NULL, "EOF clears token");
+        require(token.get_line() == 0 && token.get_column() == 0, "EOF clears source position");
         require(scanner.get_token_count() == tokens.size(), "Token count");
         return tokens;
     }
@@ -41,6 +42,13 @@ namespace {
             return;
         }
         throw std::runtime_error("Expected error: " + source);
+    }
+
+    void positions(const std::string &source, const std::vector<std::pair<size_t, size_t>> &expected) {
+        auto tokens = scan(source);
+        require(tokens.size() == expected.size(), "Source position token count");
+        for (size_t i = 0; i < tokens.size(); ++i)
+            require(tokens[i].get_line() == expected[i].first && tokens[i].get_column() == expected[i].second, "Source position for token " + tokens[i].get_token());
     }
 } // namespace
 
@@ -69,6 +77,12 @@ int main() {
         require(lines.size() == 3 && lines[0].get_line() == 3 && lines[1].get_line() == 4 && lines[2].get_line() == 5, "Comment, whitespace and newline tracking");
         auto spliced = scan("na\\\nme +\\\r\n= 1; // hidden\\\n still hidden\n\"a\\\nb\" next");
         require(spliced.size() == 6 && spliced[0].get_token() == "name" && spliced[0].get_line() == 1 && spliced[1].get_token() == "+=" && spliced[1].get_line() == 2 && spliced[4].get_token() == "\"ab\"" && spliced[4].get_line() == 5 && spliced[5].get_line() == 6, "Line splicing");
+        positions("  id\t+= 12 .5 L\"x\" 'a'\x01", {{1, 3}, {1, 6}, {1, 9}, {1, 12}, {1, 15}, {1, 20}, {1, 23}});
+        positions("a\n  b\r\n\tc\r d", {{1, 1}, {2, 3}, {3, 2}, {4, 2}});
+        positions("/* x */ a // comment\r\n/*\n */  b", {{1, 9}, {3, 6}});
+        positions(".\n.\r\n.\r+", {{1, 1}, {2, 1}, {3, 1}, {4, 1}});
+        positions("na\\\nme +\\\r\n= 1; // hidden\\\n still hidden\n\"a\\\nb\" next", {{1, 1}, {2, 4}, {3, 3}, {3, 4}, {5, 1}, {6, 4}});
+        positions("\\\r  x\\\n y", {{2, 3}, {3, 2}});
         auto program = scan("#define CAT(a,b) a ## b\nint main(void) { const char *s = \"hello\"; return s[0] == 'h' ? 0 : 1; }");
         require(program.size() == 37 && program[0].get_char_type() == C::CHAR_HASH, "C program");
         require(scan("// eof").empty() && scan("/* ok */").empty(), "Comments at EOF");
@@ -78,6 +92,13 @@ int main() {
         token.set_token("+", T::OPERATOR, C::CHAR_PLUS);
         token.set_token("id", T::IDENTIFIER);
         require(token.get_char_type() == C::CHAR_NULL, "Reset stale operator metadata");
+        token.set_line(3);
+        token.set_column(7);
+        mx::Token copied = token;
+        mx::Token moved = std::move(copied);
+        require(moved.get_line() == 3 && moved.get_column() == 7, "Copy and move preserve source position");
+        token.clear();
+        require(token.get_line() == 0 && token.get_column() == 0, "Clear resets source position");
         std::cout << "Scanner regression tests passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';

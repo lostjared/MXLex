@@ -77,7 +77,10 @@ cmake --install build/cmake --prefix /path/to/prefix
   for their semantic value. Adjacent string literals remain separate tokens.
 - Line and block comments, all six ASCII whitespace characters, and
   backslash-newline continuations. LF, CRLF, and CR line endings are accepted.
-  Token line numbers refer to the first physical source line of each token.
+  `Token::get_line()` and `Token::get_column()` return the 1-based physical
+  source position of the first character of each token, including tokens split
+  by continuations. Columns count bytes, with tabs counting as one column.
+  Cleared tokens, including the token returned at EOF, have line and column 0.
 
 Malformed numbers, empty character literals, unterminated literals, and
 unterminated block comments throw `mx::ScannerError`. Unknown bytes return

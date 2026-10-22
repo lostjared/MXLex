@@ -22,6 +22,7 @@ namespace mx {
                 if (newline == '\r' && input.peek() == '\n')
                     input.get();
                 ++input_line;
+                input_column = 1;
                 continue;
             }
             if (c == '\r') {
@@ -29,17 +30,21 @@ namespace mx {
                     input.get();
                 c = '\n';
             }
-            lookahead.emplace_back(static_cast<char>(c), input_line);
-            if (c == '\n')
+            lookahead.push_back({static_cast<char>(c), input_line, input_column});
+            if (c == '\n') {
                 ++input_line;
+                input_column = 1;
+            } else {
+                ++input_column;
+            }
         }
-        return static_cast<unsigned char>(lookahead[offset].first);
+        return static_cast<unsigned char>(lookahead[offset].value);
     }
 
     int Scanner::take() {
         int c = peek();
         if (c != END) {
-            line = lookahead.front().second + (c == '\n' ? 1 : 0);
+            line = lookahead.front().line + (c == '\n' ? 1 : 0);
             lookahead.pop_front();
         }
         return c;
@@ -63,7 +68,7 @@ namespace mx {
                 continue;
             }
             if (c == '/' && peek(1) == '*') {
-                size_t start = lookahead.front().second;
+                size_t start = lookahead.front().line;
                 take();
                 take();
                 while (peek() != END && !(peek() == '*' && peek(1) == '/'))
@@ -77,7 +82,8 @@ namespace mx {
             break;
         }
 
-        size_t start = lookahead.front().second;
+        size_t start = lookahead.front().line;
+        size_t start_column = lookahead.front().column;
         char c = static_cast<char>(take());
         if (letter(static_cast<unsigned char>(c))) {
             std::string value = get_identifier(c);
@@ -102,6 +108,7 @@ namespace mx {
             }
         }
         token.set_line(start);
+        token.set_column(start_column);
         ++token_count;
         return token.get_type();
     }

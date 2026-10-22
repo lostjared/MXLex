@@ -28,12 +28,15 @@ namespace mx {
         friend std::ostream &operator<<(std::ostream &out, const Token &token);
         void set_line(const size_t &line_num) { line = line_num; }
         size_t get_line() const { return line; }
+        void set_column(const size_t &column_num) { column = column_num; }
+        size_t get_column() const { return column; }
 
       private:
         std::string token_value{};
         TOKEN_TYPE token_type{TOKEN_TYPE::TOKEN_NULL};
         CHAR_TYPE c_type{CHAR_TYPE::CHAR_NULL};
         size_t line = 0;
+        size_t column = 0;
     };
 
     class CharLayout {
